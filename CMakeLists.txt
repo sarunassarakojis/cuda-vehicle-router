@@ -1,3 +1,6 @@
-cmake_minimum_required(VERSION 2.6)
-project(cuda-vehicle-router)
-add_executable(cuda-vehicle-router entry.cpp)
+cmake_minimum_required (3.10)
+
+project (cuda-vehicle-router)
+
+set (SOURCES entry.cpp)
+add_executable (cuda-vehicle-router ${SOURCES})
