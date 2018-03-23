@@ -18,5 +18,5 @@ cd build/
 ```
 Run _CMake_:
 ```
-cmake -G "Visual Studio 15 2017 Win64" -T v140 ..
+cmake -G "Visual Studio 15 2017 Win64" -T v140,host=x64 ..
 ```
