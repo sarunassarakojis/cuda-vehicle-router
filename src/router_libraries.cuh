@@ -1,3 +1,6 @@
+#ifndef ROUTER_LIBRARIES_CUH
+#define ROUTER_LIBRARIES_CUH
+
 #include <cuda_runtime.h>
 
 namespace vr {
@@ -7,3 +10,5 @@ namespace vr {
 
 	void execute_kernel_wrapper(int);
 }
+
+#endif
