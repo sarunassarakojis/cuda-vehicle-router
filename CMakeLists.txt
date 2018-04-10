@@ -4,7 +4,7 @@ project (cuda-vehicle-router LANGUAGES CXX CUDA)
 
 set (SOURCES src/entry.cpp
              src/router_libraries.cuh
-			 src/router_libraries.cu)
+             src/router_libraries.cu)
 
 add_executable (cuda-vehicle-router ${SOURCES})
 
