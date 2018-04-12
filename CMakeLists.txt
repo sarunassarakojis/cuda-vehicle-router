@@ -4,7 +4,7 @@ function (configure_target_executable target_name src)
 endfunction ()
 
 function (configure_target_library target_name src)
-    add_library (${${target_name}} STATIC ${${src}})
+    add_library (${${target_name}} SHARED ${${src}})
 endfunction ()
 
 cmake_minimum_required (VERSION 3.10 FATAL_ERROR)
