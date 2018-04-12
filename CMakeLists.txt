@@ -1,3 +1,12 @@
+function (configure_target_executable target_name src)
+    add_executable (${${target_name}} ${${src}})
+    set_target_properties (${${target_name}} PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
+endfunction ()
+
+function (configure_target_library target_name src)
+    add_library (${${target_name}} STATIC ${${src}})
+endfunction ()
+
 cmake_minimum_required (VERSION 3.10 FATAL_ERROR)
 
 set (PROJECT_NAME cuda-vehicle-router)
@@ -10,8 +19,7 @@ set (SOURCES ${SRC}/entry.cpp
              ${SRC}/router_library.h
              ${SRC}/router_library.cpp)
 
-add_executable (${PROJECT_NAME} ${SOURCES})
-set (LIBRARY "${PROJECT_NAME}-lib")
-add_library (${LIBRARY} STATIC ${SOURCES})
+configure_target_executable (PROJECT_NAME SOURCES)
 
-set_target_properties (cuda-vehicle-router PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
+set (LIBRARY "${PROJECT_NAME}-lib")
+configure_target_library (LIBRARY SOURCES)
