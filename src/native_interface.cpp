@@ -1,7 +1,10 @@
 #include <cstdio>
 #include <jni.h>
 #include "native_interface.h"
+#include "router_library.h"
 
 JNIEXPORT void JNICALL Java_com_vehicle_router_NativeLibraryRunner_helloNative(JNIEnv* env, jobject object) {
-	printf("Hello world !\n");
+	printf("Launching kernel!\n");
+
+	vr::execute_in_parallel(100);
 }
