@@ -6,5 +6,5 @@
 JNIEXPORT void JNICALL Java_com_vehicle_router_NativeLibraryRunner_helloNative(JNIEnv* env, jobject object) {
 	printf("Launching kernel!\n");
 
-	vr::execute_in_parallel(100);
+	vr::executeInParallel();
 }

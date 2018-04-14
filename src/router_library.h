@@ -3,7 +3,7 @@
 
 namespace vr {
 
-	void execute_in_parallel(int num_of_threads);
+	void executeInParallel();
 }
 
 #endif

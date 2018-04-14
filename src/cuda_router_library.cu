@@ -3,8 +3,7 @@
 #include <iostream>
 
 __global__
-
-void cuda_vr::add_vectors(float* source_vec_a, float* source_vec_b, float* res_vec, int size) {
+void cuda_vr::addVectors(float* source_vec_a, float* source_vec_b, float* res_vec, int size) {
 	const int i = blockDim.x * blockIdx.x + threadIdx.x;
 
 	if (i < size) {
@@ -19,7 +18,7 @@ void print_array_contents(T* block, size_t size) {
 	}
 }
 
-void cuda_vr::execute_kernel_wrapper(int num_of_threads) {
+void cuda_vr::addVectorsWrapper() {
 	const int n = 5;
 	size_t size = n * sizeof(float);
 	float* vec_a_host = (float*)malloc(size);
@@ -54,7 +53,7 @@ void cuda_vr::execute_kernel_wrapper(int num_of_threads) {
 	int threads_per_block = 256;
 	int blocks_per_grid = (n + threads_per_block - 1) / threads_per_block;
 
-	add_vectors<<<blocks_per_grid, threads_per_block>>>(vec_a_device, vec_b_device, vec_res_device, n);
+	addVectors<<<blocks_per_grid, threads_per_block>>>(vec_a_device, vec_b_device, vec_res_device, n);
 
 	cudaMemcpy(vec_res_host, vec_res_device, size, cudaMemcpyDeviceToHost);
 
