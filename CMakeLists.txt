@@ -26,8 +26,8 @@ set (SOURCES ${SRC}/entry.cpp
              ${SRC}/cuda_router_library.cu
              ${SRC}/router_library.h
              ${SRC}/router_library.cpp
-             ${SRC}/native_interface.h
-             ${SRC}/native_interface.cpp)
+             ${SRC}/native/native_interface.h
+             ${SRC}/native/native_interface.cpp)
 
 configure_target_executable (${PROJECT_NAME} "${SOURCES}")
 

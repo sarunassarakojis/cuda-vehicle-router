@@ -28,20 +28,20 @@ void cuda_vr::addVectorsWrapper() {
 	float* vec_b_device;
 	float* vec_res_device;
 
-	vec_a_host[0] = 2.3;
-	vec_a_host[1] = 2.5;
-	vec_a_host[2] = 1;
-	vec_a_host[3] = 999.1;
-	vec_a_host[4] = 0.1;
+	vec_a_host[0] = 2.3f;
+	vec_a_host[1] = 2.5f;
+	vec_a_host[2] = 1.0f;
+	vec_a_host[3] = 999.1f;
+	vec_a_host[4] = .1f;
 	std::cout << "Source vector a:" << std::endl;
 	print_array_contents(vec_a_host, n);
 	std::cout << std::endl;
 
-	vec_b_host[0] = 2.3;
-	vec_b_host[1] = 2.5;
-	vec_b_host[2] = 1;
-	vec_b_host[3] = 999.1;
-	vec_b_host[4] = 0.1;
+	vec_b_host[0] = 2.3f;
+	vec_b_host[1] = 2.5f;
+	vec_b_host[2] = 1.0f;
+	vec_b_host[3] = 999.1f;
+	vec_b_host[4] = .1f;
 
 	cudaMalloc(&vec_a_device, size);
 	cudaMalloc(&vec_b_device, size);
