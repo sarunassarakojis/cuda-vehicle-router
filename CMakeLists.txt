@@ -8,6 +8,18 @@ function (configure_target_library target_name headers src)
     set_target_properties (${target_name} PROPERTIES PUBLIC_HEADER "${headers}")
 endfunction ()
 
+function (add_install_rules_for_shared_library target_name)
+    include (GenerateExportHeader)
+    SET (EXPORTS_FILE ${PROJECT_BINARY_DIR}/../${SRC}/router_library_exports.h)
+
+    generate_export_header (${target_name} EXPORT_MACRO_NAME ROUTER_LIB_EXPORT 
+            EXPORT_FILE_NAME ${EXPORTS_FILE})
+    install (TARGETS ${target_name} PUBLIC_HEADER DESTINATION include
+            ARCHIVE DESTINATION lib CONFIGURATIONS Release Debug
+            RUNTIME DESTINATION bin CONFIGURATIONS Release Debug)
+    install (FILES ${EXPORTS_FILE} DESTINATION include CONFIGURATIONS Debug Release)
+endfunction ()
+
 cmake_minimum_required (VERSION 3.10 FATAL_ERROR)
 
 set (PROJECT_NAME cuda-vehicle-router)
@@ -25,7 +37,4 @@ configure_target_executable (${PROJECT_NAME} "${SOURCE}")
 
 set (LIBRARY_NAME "${PROJECT_NAME}-lib")
 configure_target_library (${LIBRARY_NAME} "${HEADERS}" "${SOURCES}")
-
-install (TARGETS ${LIBRARY_NAME} PUBLIC_HEADER DESTINATION include
-                                 ARCHIVE DESTINATION lib CONFIGURATIONS Release Debug
-                                 RUNTIME DESTINATION bin CONFIGURATIONS Release Debug)
+add_install_rules_for_shared_library (${LIBRARY_NAME})

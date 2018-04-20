@@ -1,6 +1,7 @@
 #pragma once
 
-namespace vr {
+#include "router_library_exports.h"
 
-	void executeInParallel();
+namespace vr {
+     ROUTER_LIB_EXPORT void executeInParallel();
 }
