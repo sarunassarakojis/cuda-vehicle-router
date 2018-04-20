@@ -1,9 +1,6 @@
-#ifndef ROUTER_LIBRARY
-#define ROUTER_LIBRARY
+#pragma once
 
 namespace vr {
 
 	void executeInParallel();
 }
-
-#endif

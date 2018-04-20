@@ -1,9 +1,10 @@
-#include "cuda_router_library.cuh"
+#include "cuda_router_library.h"
 #include <cstdlib>
 #include <iostream>
+#include <cuda_runtime.h>
 
 __global__
-void cuda_vr::addVectors(float* source_vec_a, float* source_vec_b, float* res_vec, int size) {
+void addVectors(float* source_vec_a, float* source_vec_b, float* res_vec, int size) {
 	const int i = blockDim.x * blockIdx.x + threadIdx.x;
 
 	if (i < size) {
@@ -63,6 +64,4 @@ void cuda_vr::addVectorsWrapper() {
 	cudaFree(vec_a_device);
 	cudaFree(vec_b_device);
 	cudaFree(vec_res_device);
-
-
 }
