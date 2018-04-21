@@ -12,7 +12,7 @@ endfunction ()
 
 function (add_install_rules_for_shared_library target_name)
     include (GenerateExportHeader)
-    SET (EXPORTS_FILE ${PROJECT_BINARY_DIR}/../${SRC}/router_library_exports.h)
+    SET (EXPORTS_FILE ${PROJECT_SOURCE_DIR}/${SRC}/router_library_exports.h)
 
     generate_export_header (${target_name} EXPORT_MACRO_NAME ROUTER_LIB_EXPORT 
             EXPORT_FILE_NAME ${EXPORTS_FILE})
