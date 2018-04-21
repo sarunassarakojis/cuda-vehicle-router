@@ -4,6 +4,8 @@ function (configure_target_executable target_name src)
 endfunction ()
 
 function (configure_target_library target_name headers src)
+    set (CMAKE_DEBUG_POSTFIX d)
+
     add_library (${target_name} SHARED ${headers} ${src})
     set_target_properties (${target_name} PROPERTIES PUBLIC_HEADER "${headers}")
 endfunction ()
