@@ -17,8 +17,8 @@ function (add_install_rules_for_shared_library target_name)
     install (TARGETS ${target_name} PUBLIC_HEADER DESTINATION include
             ARCHIVE DESTINATION lib CONFIGURATIONS Release
             RUNTIME DESTINATION bin CONFIGURATIONS Release)
-    install (TARGETS ${target_name} ARCHIVE DESTINATION Debug/lib CONFIGURATIONS Debug
-            RUNTIME DESTINATION Debug/bin CONFIGURATIONS Debug)
+    install (TARGETS ${target_name} ARCHIVE DESTINATION debug/lib CONFIGURATIONS Debug
+            RUNTIME DESTINATION debug/bin CONFIGURATIONS Debug)
     install (FILES ${EXPORTS_FILE} DESTINATION include CONFIGURATIONS Debug Release)
 endfunction ()
 
