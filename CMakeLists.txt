@@ -15,8 +15,10 @@ function (add_install_rules_for_shared_library target_name)
     generate_export_header (${target_name} EXPORT_MACRO_NAME ROUTER_LIB_EXPORT 
             EXPORT_FILE_NAME ${EXPORTS_FILE})
     install (TARGETS ${target_name} PUBLIC_HEADER DESTINATION include
-            ARCHIVE DESTINATION lib CONFIGURATIONS Release Debug
-            RUNTIME DESTINATION bin CONFIGURATIONS Release Debug)
+            ARCHIVE DESTINATION lib CONFIGURATIONS Release
+            RUNTIME DESTINATION bin CONFIGURATIONS Release)
+    install (TARGETS ${target_name} ARCHIVE DESTINATION Debug/lib CONFIGURATIONS Debug
+            RUNTIME DESTINATION Debug/bin CONFIGURATIONS Debug)
     install (FILES ${EXPORTS_FILE} DESTINATION include CONFIGURATIONS Debug Release)
 endfunction ()
 
