@@ -7,7 +7,8 @@ function (configure_target_library target_name headers src)
     set (CMAKE_DEBUG_POSTFIX d)
 
     add_library (${target_name} SHARED ${headers} ${src})
-    set_target_properties (${target_name} PROPERTIES PUBLIC_HEADER "${headers}")
+    set_target_properties (${target_name} PROPERTIES PUBLIC_HEADER "${headers}"
+            CUDA_SEPARABLE_COMPILATION ON)
 endfunction ()
 
 function (add_install_rules_for_shared_library target_name)
