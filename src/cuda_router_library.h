@@ -2,5 +2,5 @@
 
 namespace cuda_vr {
 
-    void addVectorsWrapper();
+    void add_vectors_wrapper();
 }
