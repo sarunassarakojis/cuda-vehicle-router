@@ -1,4 +1,4 @@
-#include "cuda_router_library.h"
+#include "../../include/routing/cuda_router_library.h"
 #include <cstdlib>
 #include <iostream>
 #include <cuda_runtime.h>

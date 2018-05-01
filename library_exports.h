@@ -1,18 +1,18 @@
 
-#ifndef ROUTER_LIB_EXPORT_H
-#define ROUTER_LIB_EXPORT_H
+#ifndef LIBRARY_EXPORT_H
+#define LIBRARY_EXPORT_H
 
 #ifdef CUDA_VEHICLE_ROUTER_LIB_STATIC_DEFINE
-#  define ROUTER_LIB_EXPORT
+#  define LIBRARY_EXPORT
 #  define CUDA_VEHICLE_ROUTER_LIB_NO_EXPORT
 #else
-#  ifndef ROUTER_LIB_EXPORT
+#  ifndef LIBRARY_EXPORT
 #    ifdef cuda_vehicle_router_lib_EXPORTS
         /* We are building this library */
-#      define ROUTER_LIB_EXPORT __declspec(dllexport)
+#      define LIBRARY_EXPORT __declspec(dllexport)
 #    else
         /* We are using this library */
-#      define ROUTER_LIB_EXPORT __declspec(dllimport)
+#      define LIBRARY_EXPORT __declspec(dllimport)
 #    endif
 #  endif
 
@@ -26,7 +26,7 @@
 #endif
 
 #ifndef CUDA_VEHICLE_ROUTER_LIB_DEPRECATED_EXPORT
-#  define CUDA_VEHICLE_ROUTER_LIB_DEPRECATED_EXPORT ROUTER_LIB_EXPORT CUDA_VEHICLE_ROUTER_LIB_DEPRECATED
+#  define CUDA_VEHICLE_ROUTER_LIB_DEPRECATED_EXPORT LIBRARY_EXPORT CUDA_VEHICLE_ROUTER_LIB_DEPRECATED
 #endif
 
 #ifndef CUDA_VEHICLE_ROUTER_LIB_DEPRECATED_NO_EXPORT
