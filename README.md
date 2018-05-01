@@ -18,5 +18,7 @@ cd build/
 ```
 Run _CMake_:
 ```
-cmake -G "Visual Studio 15 2017 Win64" -T v140,host=x64 ..
+cmake "-DCMAKE_TOOLCHAIN_FILE=<path to vcpkg>\vcpkg\scripts\buildsystems\vcpkg.cmake" 
+      -G "Visual Studio 15 2017 Win64"
+      -T v140,host=x64 ..
 ```
