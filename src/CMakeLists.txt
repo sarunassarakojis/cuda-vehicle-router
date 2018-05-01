@@ -1,8 +1,9 @@
 function (configure_target_executable target_name src)
-    add_executable (${target_name} ${src})
+    add_executable (${target_name} entry.cpp)
 
     set_target_properties (${target_name} PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
     target_include_directories (${target_name} PRIVATE ${HEADERS_DIR})
+    target_link_libraries (${target_name} ${LIBRARY_NAME})
 endfunction ()
 
 function (configure_target_library target_name headers src)
@@ -31,14 +32,15 @@ endfunction ()
 set (HEADERS_DIR ${PROJECT_SOURCE_DIR}/include)
 set (HEADERS ${HEADERS_DIR}/routing/cuda_router_library.h
              ${HEADERS_DIR}/routing/router_library.h
-             ${HEADERS_DIR}/utilities/device/device_query.h)
+             ${HEADERS_DIR}/utilities/device/device_query.h
+             ${HEADERS_DIR}/utilities/device/device_types.h)
 set (SOURCES routing/cuda_router_library.cu
              routing/router_library.cpp
              utilities/device/device_query.cpp)
 
-set (EXE_SOURCE ${HEADERS} ${SOURCES} entry.cpp)
-configure_target_executable (${PROJECT_NAME} "${EXE_SOURCE}")
-
 set (LIBRARY_NAME "${PROJECT_NAME}-lib")
 configure_target_library (${LIBRARY_NAME} "${HEADERS}" "${SOURCES}")
+
+configure_target_executable (${PROJECT_NAME} entry.cpp)
+
 add_install_rules_for_shared_library (${LIBRARY_NAME})
