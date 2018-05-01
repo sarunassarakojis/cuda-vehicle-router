@@ -12,6 +12,7 @@ function (configure_target_library target_name headers src)
     add_library (${target_name} SHARED ${headers} ${src})
     set_target_properties (${target_name} PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
     target_include_directories (${target_name} PRIVATE ${HEADERS_DIR})
+    target_link_libraries (${target_name} PRIVATE spdlog::spdlog fmt::fmt-header-only)
 endfunction ()
 
 function (add_install_rules_for_shared_library target_name)
