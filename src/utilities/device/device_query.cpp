@@ -17,31 +17,33 @@ Device_properties* map_to_device_properties(cudaDeviceProp& properties, int& dri
     return device_properties;
 }
 
-std::vector<Device_properties> device_query::get_cuda_device_properties() {
+std::vector<std::unique_ptr<Device_properties>> device_query::get_cuda_device_properties() {
     auto device_count = 0;
     const cudaError_t error_id = cudaGetDeviceCount(&device_count);
-    vector<Device_properties> devices;
+    vector<std::unique_ptr<Device_properties>> devices;
 
     if (error_id != cudaSuccess) {
         get_logger()->info("Error retrieving cuda device count: {}", cudaGetErrorString(error_id));
     }
 
-    for (int device = 0; device < device_count; ++device) {
-        cudaDeviceProp properties{};
-        int driver_version = 0;
-
-        cudaSetDevice(device);
-        cudaGetDeviceProperties(&properties, device);
-        cudaDriverGetVersion(&driver_version);
-
-        devices.push_back(*map_to_device_properties(properties, driver_version));
+    devices.reserve(device_count);
+    for (auto device = 0; device < device_count; ++device) {
+        devices.push_back(get_cuda_device_properties(&device));
     }
 
     return devices;
 }
 
-Device_properties* device_query::get_cuda_device_properties(int* device_indice) {
+std::unique_ptr<Device_properties> device_query::get_cuda_device_properties(const int* device_indice) {
+    int driver_version = 0;
+    cudaDeviceProp properties{};
+    const cudaError_t error_id = cudaGetDeviceProperties(&properties, *device_indice);
 
-    return nullptr;
+    if (error_id != cudaSuccess) {
+        get_logger()->info("Invalid cuda device at: {0}, error: {1}", *device_indice, cudaGetErrorString(error_id));
+        return nullptr;
+    }
+    cudaDriverGetVersion(&driver_version);
 
+    return unique_ptr<Device_properties>(map_to_device_properties(properties, driver_version));
 }
