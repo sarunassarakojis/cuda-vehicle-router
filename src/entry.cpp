@@ -1,14 +1,13 @@
-#include "routing/router_library.h"
 #include "utilities/device/device_query.h"
 #include "utilities/logging.h"
+#include <iostream>
 
 int main(int argc, char* argv[]) {
     using namespace device_types;
 
-    Device_properties* properties = nullptr;
-    unsigned size = 0;
-
-    vr::execute_in_parallel();
     logging::create_logger();
-    device_query::get_cuda_device_properties(properties, size);
+    std::vector<Device_properties> properties = device_query::get_cuda_device_properties();
+    auto p = properties[0];
+
+    std::cout << p.device_name << '\n';
 }
