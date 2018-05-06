@@ -33,6 +33,7 @@ endfunction ()
 set (HEADERS_DIR ${PROJECT_SOURCE_DIR}/include)
 set (PUBLIC_API ${HEADERS_DIR}/routing/cuda_router_library.h
         ${HEADERS_DIR}/routing/router_library.h
+        ${HEADERS_DIR}/routing/routing_types.h
         ${HEADERS_DIR}/utilities/device/device_query.h
         ${HEADERS_DIR}/utilities/device/device_types.h
         ${HEADERS_DIR}/utilities/logging.h)
