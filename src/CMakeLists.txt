@@ -41,9 +41,11 @@ set (SOURCES routing/cuda_router_library.cu
         utilities/device/device_query.cpp
         utilities/logging.cpp)
 
+source_group (TREE ${PROJECT_SOURCE_DIR}/include PREFIX "Header Files" FILES ${PUBLIC_API})
+source_group (TREE ${PROJECT_SOURCE_DIR}/src PREFIX "Source Files" FILES ${SOURCES})
+
 set (LIBRARY_NAME "${PROJECT_NAME}-lib")
 configure_target_library (${LIBRARY_NAME} "${PUBLIC_API}" "${SOURCES}")
-
-configure_target_executable (${PROJECT_NAME} entry.cpp)
+configure_target_executable (${PROJECT_NAME} executable/entry.cpp)
 
 add_install_rules_for_shared_library (${LIBRARY_NAME})
