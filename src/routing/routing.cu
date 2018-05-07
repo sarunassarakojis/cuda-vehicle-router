@@ -1,4 +1,5 @@
-#include "../../include/routing/cuda_router_library.h"
+#include "routing/routing.h"
+
 #include <cstdlib>
 #include <iostream>
 #include <cuda_runtime.h>
@@ -19,7 +20,7 @@ void print_array_contents(T* block, size_t size) {
     }
 }
 
-void cuda_vr::add_vectors_wrapper() {
+void routing::execute_in_parallel() {
     const int n = 5;
     size_t size = n * sizeof(float);
     float* vec_a_host = (float*)malloc(size);

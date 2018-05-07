@@ -31,14 +31,14 @@ function (add_install_rules_for_shared_library target_name)
 endfunction ()
 
 set (HEADERS_DIR ${PROJECT_SOURCE_DIR}/include)
-set (PUBLIC_API ${HEADERS_DIR}/routing/cuda_router_library.h
-        ${HEADERS_DIR}/routing/router_library.h
+set (PUBLIC_API 
+        ${HEADERS_DIR}/routing/routing.h
         ${HEADERS_DIR}/routing/routing_types.h
         ${HEADERS_DIR}/utilities/device/device_query.h
         ${HEADERS_DIR}/utilities/device/device_types.h
         ${HEADERS_DIR}/utilities/logging.h)
-set (SOURCES routing/cuda_router_library.cu
-        routing/router_library.cpp
+set (SOURCES 
+        routing/routing.cu
         utilities/device/device_query.cpp
         utilities/logging.cpp)
 

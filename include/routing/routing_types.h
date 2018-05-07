@@ -1,6 +1,6 @@
 #pragma once
 
-namespace routing_types {
+namespace routing {
     
     struct Node {
         long x;
