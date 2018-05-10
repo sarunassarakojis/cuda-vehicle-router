@@ -1,68 +1,125 @@
 #include "routing/routing.h"
 
-#include <cstdlib>
 #include <iostream>
 #include <cuda_runtime.h>
+#include <algorithm>
+#include <forward_list>
+#include <unordered_set>
 
-__global__
-void add_vectors(float* source_vec_a, float* source_vec_b, float* res_vec, int size) {
-    const int i = blockDim.x * blockIdx.x + threadIdx.x;
-
-    if (i < size) {
-        res_vec[i] = source_vec_a[i] + source_vec_b[i];
-    }
+inline double power_by_2(const double& x) {
+    return pow(x, 2);
 }
 
 template <typename T>
-void print_array_contents(T* block, size_t size) {
-    for (auto i = 0; i != size; ++i) {
-        std::cout << "Element: " << block[i] << std::endl;
+void print_out(T** matrix, const int& size) {
+    for (int i = 0; i < size; i++) {
+        for (int j = 0; j < size; j++) {
+            std::cout << matrix[i][j] << " ";
+        }
+        std::cout << "\n";
     }
 }
 
-void routing::execute_in_parallel() {
-    const int n = 5;
-    size_t size = n * sizeof(float);
-    float* vec_a_host = (float*)malloc(size);
-    float* vec_b_host = (float*)malloc(size);
-    float* vec_res_host = (float*)malloc(size);
-    float* vec_a_device;
-    float* vec_b_device;
-    float* vec_res_device;
+std::forward_list<routing::Route> routing::route(std::vector<Node> nodes, unsigned vehicle_capacity) {
+    using namespace std;
 
-    vec_a_host[0] = 2.3f;
-    vec_a_host[1] = 2.5f;
-    vec_a_host[2] = 1.0f;
-    vec_a_host[3] = 999.1f;
-    vec_a_host[4] = .1f;
-    std::cout << "Source vector a:" << std::endl;
-    print_array_contents(vec_a_host, n);
-    std::cout << std::endl;
+    const int n = nodes.size();
+    double** distance_matrix = new double*[n];
+    vector<Saving> savings;
+    forward_list<Route> routes;
+    unordered_set<long> added_nodes_index;
 
-    vec_b_host[0] = 2.3f;
-    vec_b_host[1] = 2.5f;
-    vec_b_host[2] = 1.0f;
-    vec_b_host[3] = 999.1f;
-    vec_b_host[4] = .1f;
+    added_nodes_index.reserve(n);
 
-    cudaMalloc(&vec_a_device, size);
-    cudaMalloc(&vec_b_device, size);
-    cudaMalloc(&vec_res_device, size);
+    // distance matrix calculation
+    for (int i = 0; i < n; i++) {
+        distance_matrix[i] = new double[n];
 
-    cudaMemcpy(vec_a_device, vec_a_host, size, cudaMemcpyHostToDevice);
-    cudaMemcpy(vec_b_device, vec_b_host, size, cudaMemcpyHostToDevice);
+        for (int j = 0; j < n; j++) {
+            double d = sqrt(power_by_2(nodes[i].x - nodes[j].x) + power_by_2(nodes[i].y - nodes[j].y));
 
-    int threads_per_block = 256;
-    int blocks_per_grid = (n + threads_per_block - 1) / threads_per_block;
+            distance_matrix[i][j] = d;
+        }
+    }
 
-    add_vectors<<<blocks_per_grid, threads_per_block>>>(vec_a_device, vec_b_device, vec_res_device, n);
+    cout << "Distance matrix:" << '\n';
+    print_out(distance_matrix, n);
 
-    cudaMemcpy(vec_res_host, vec_res_device, size, cudaMemcpyDeviceToHost);
+    // savings calculation
+    savings.reserve(power_by_2(n));
+    for (int i = 1; i < n; i++) {
+        for (int j = 1; j < n; j++) {
+            if (i != j) {
+                double saving = distance_matrix[0][i] + distance_matrix[0][j] - distance_matrix[i][j];
 
-    std::cout << "Result vector:" << std::endl;
-    print_array_contents(vec_res_host, n);
+                savings.push_back(Saving{i, j, saving});
+            }
+        }
+    }
 
-    cudaFree(vec_a_device);
-    cudaFree(vec_b_device);
-    cudaFree(vec_res_device);
+    // sort saving in descending order
+    sort(savings.begin(), savings.end(), [&](auto& s1, auto& s2) -> bool { return s1.saving > s2.saving; });
+
+    cout << "\nSavings sorted:" << '\n';
+    for (auto& s : savings) {
+        printf("s(%d, %d) = %f\n", s.node_i, s.node_j, s.saving);
+    }
+
+    // main algo
+    for (auto& saving : savings) {
+        const auto found_i = added_nodes_index.find(saving.node_i) != added_nodes_index.end();
+        const auto found_j = added_nodes_index.find(saving.node_j) != added_nodes_index.end();
+
+        if (!found_i && !found_j && nodes[saving.node_i].demand + nodes[saving.node_j].demand <= vehicle_capacity) {
+
+            added_nodes_index.insert(saving.node_i);
+            added_nodes_index.insert(saving.node_j);
+            routes.push_front(Route{
+                nodes[saving.node_i].demand + nodes[saving.node_j].demand,
+                {saving.node_i, saving.node_j}
+            });
+        }
+        else if (found_i && !found_j) {
+            // TODO refactor
+            // TODO also check if constraints are not violated
+            // TODO update route_cost as well
+            for (auto iterator = routes.begin(); iterator != routes.end(); ++iterator) {
+                if (iterator->nodes.front() == saving.node_i) {
+                    iterator->nodes.push_front(saving.node_j);
+                    added_nodes_index.insert(saving.node_j);
+                    break;
+                }
+                if (iterator->nodes.back() == saving.node_i) {
+                    iterator->nodes.push_back(saving.node_j);
+                    added_nodes_index.insert(saving.node_j);
+                    break;
+                }
+            }
+        }
+        else if (found_j && !found_i) {
+            // TODO refactor
+            // TODO also check if constraints are not violated
+            // TODO update route_cost as well
+            for (auto iterator = routes.begin(); iterator != routes.end(); ++iterator) {
+                if (iterator->nodes.front() == saving.node_j) {
+                    iterator->nodes.push_front(saving.node_i);
+                    added_nodes_index.insert(saving.node_i);
+                    break;
+                }
+                if (iterator->nodes.back() == saving.node_j) {
+                    iterator->nodes.push_back(saving.node_i);
+                    added_nodes_index.insert(saving.node_i);
+                    break;
+                }
+            }
+        }
+
+    }
+
+    for (auto i = 0; i < n; i++) {
+        delete[] distance_matrix[i];
+    }
+    delete[] distance_matrix;
+
+    return routes;
 }
