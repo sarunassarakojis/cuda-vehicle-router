@@ -15,4 +15,12 @@ namespace routing {
      * \param vehicle_capacity ca
      */
     LIBRARY_EXPORT std::forward_list<Route> route(std::vector<Node> nodes, unsigned vehicle_capacity);
+
+    /**
+    * \brief routes
+    *
+    * \param nodes nodes
+    * \param vehicle_capacity ca
+    */
+    LIBRARY_EXPORT std::forward_list<Route> route_parallel(std::vector<Node> nodes, unsigned vehicle_capacity);
 }

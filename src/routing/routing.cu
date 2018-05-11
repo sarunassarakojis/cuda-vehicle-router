@@ -1,10 +1,11 @@
 #include "routing/routing.h"
 
 #include <iostream>
-#include <cuda_runtime.h>
 #include <algorithm>
 #include <forward_list>
 #include <unordered_set>
+
+using namespace std;
 
 inline double power_by_2(const double& x) {
     return pow(x, 2);
@@ -21,8 +22,6 @@ void print_out(T** matrix, const int& size) {
 }
 
 std::forward_list<routing::Route> routing::route(std::vector<Node> nodes, unsigned vehicle_capacity) {
-    using namespace std;
-
     const int n = nodes.size();
     double** distance_matrix = new double*[n];
     vector<Saving> savings;
@@ -47,13 +46,11 @@ std::forward_list<routing::Route> routing::route(std::vector<Node> nodes, unsign
 
     // savings calculation
     savings.reserve(power_by_2(n));
-    for (int i = 1; i < n; i++) {
-        for (int j = 1; j < n; j++) {
-            if (i != j) {
-                double saving = distance_matrix[0][i] + distance_matrix[0][j] - distance_matrix[i][j];
+    for (int i = 1; i != n; ++i) {
+        for (int j = i + 1; j != n; ++j) {
+            double saving = distance_matrix[0][i] + distance_matrix[0][j] - distance_matrix[i][j];
 
-                savings.push_back(Saving{i, j, saving});
-            }
+            savings.push_back(Saving{i, j, saving});
         }
     }
 
@@ -66,7 +63,8 @@ std::forward_list<routing::Route> routing::route(std::vector<Node> nodes, unsign
     }
 
     // main algo
-    for (auto& saving : savings) {
+    for (auto i = 0; added_nodes_index.size() != n && i != savings.size(); i++) {
+        const auto saving = savings[i];
         const auto found_i = added_nodes_index.find(saving.node_i) != added_nodes_index.end();
         const auto found_j = added_nodes_index.find(saving.node_j) != added_nodes_index.end();
 
@@ -81,15 +79,17 @@ std::forward_list<routing::Route> routing::route(std::vector<Node> nodes, unsign
         }
         else if (found_i && !found_j) {
             // TODO refactor
-            // TODO also check if constraints are not violated
-            // TODO update route_cost as well
             for (auto iterator = routes.begin(); iterator != routes.end(); ++iterator) {
-                if (iterator->nodes.front() == saving.node_i) {
+                if (iterator->nodes.front() == saving.node_i
+                    && iterator->route_cost + saving.node_j <= vehicle_capacity) {
+                    iterator->route_cost += nodes[saving.node_j].demand;
                     iterator->nodes.push_front(saving.node_j);
                     added_nodes_index.insert(saving.node_j);
                     break;
                 }
-                if (iterator->nodes.back() == saving.node_i) {
+                if (iterator->nodes.back() == saving.node_i
+                    && iterator->route_cost + saving.node_j <= vehicle_capacity) {
+                    iterator->route_cost += nodes[saving.node_j].demand;
                     iterator->nodes.push_back(saving.node_j);
                     added_nodes_index.insert(saving.node_j);
                     break;
@@ -98,22 +98,23 @@ std::forward_list<routing::Route> routing::route(std::vector<Node> nodes, unsign
         }
         else if (found_j && !found_i) {
             // TODO refactor
-            // TODO also check if constraints are not violated
-            // TODO update route_cost as well
             for (auto iterator = routes.begin(); iterator != routes.end(); ++iterator) {
-                if (iterator->nodes.front() == saving.node_j) {
+                if (iterator->nodes.front() == saving.node_j
+                    && iterator->route_cost + saving.node_i <= vehicle_capacity) {
+                    iterator->route_cost += nodes[saving.node_i].demand;
                     iterator->nodes.push_front(saving.node_i);
                     added_nodes_index.insert(saving.node_i);
                     break;
                 }
-                if (iterator->nodes.back() == saving.node_j) {
+                if (iterator->nodes.back() == saving.node_j
+                    && iterator->route_cost + saving.node_i <= vehicle_capacity) {
+                    iterator->route_cost += nodes[saving.node_i].demand;
                     iterator->nodes.push_back(saving.node_i);
                     added_nodes_index.insert(saving.node_i);
                     break;
                 }
             }
         }
-
     }
 
     for (auto i = 0; i < n; i++) {
@@ -122,4 +123,8 @@ std::forward_list<routing::Route> routing::route(std::vector<Node> nodes, unsign
     delete[] distance_matrix;
 
     return routes;
+}
+
+std::forward_list<routing::Route> routing::route_parallel(std::vector<Node> nodes, unsigned vehicle_capacity) {
+    return forward_list<Route>{};
 }
