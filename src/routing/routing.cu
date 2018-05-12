@@ -81,15 +81,15 @@ std::forward_list<routing::Route> routing::route(std::vector<Node> nodes, unsign
             // TODO refactor
             for (auto iterator = routes.begin(); iterator != routes.end(); ++iterator) {
                 if (iterator->nodes.front() == saving.node_i
-                    && iterator->route_cost + saving.node_j <= vehicle_capacity) {
-                    iterator->route_cost += nodes[saving.node_j].demand;
+                    && iterator->met_demand + saving.node_j <= vehicle_capacity) {
+                    iterator->met_demand += nodes[saving.node_j].demand;
                     iterator->nodes.push_front(saving.node_j);
                     added_nodes_index.insert(saving.node_j);
                     break;
                 }
                 if (iterator->nodes.back() == saving.node_i
-                    && iterator->route_cost + saving.node_j <= vehicle_capacity) {
-                    iterator->route_cost += nodes[saving.node_j].demand;
+                    && iterator->met_demand + saving.node_j <= vehicle_capacity) {
+                    iterator->met_demand += nodes[saving.node_j].demand;
                     iterator->nodes.push_back(saving.node_j);
                     added_nodes_index.insert(saving.node_j);
                     break;
@@ -100,19 +100,29 @@ std::forward_list<routing::Route> routing::route(std::vector<Node> nodes, unsign
             // TODO refactor
             for (auto iterator = routes.begin(); iterator != routes.end(); ++iterator) {
                 if (iterator->nodes.front() == saving.node_j
-                    && iterator->route_cost + saving.node_i <= vehicle_capacity) {
-                    iterator->route_cost += nodes[saving.node_i].demand;
+                    && iterator->met_demand + saving.node_i <= vehicle_capacity) {
+                    iterator->met_demand += nodes[saving.node_i].demand;
                     iterator->nodes.push_front(saving.node_i);
                     added_nodes_index.insert(saving.node_i);
                     break;
                 }
                 if (iterator->nodes.back() == saving.node_j
-                    && iterator->route_cost + saving.node_i <= vehicle_capacity) {
-                    iterator->route_cost += nodes[saving.node_i].demand;
+                    && iterator->met_demand + saving.node_i <= vehicle_capacity) {
+                    iterator->met_demand += nodes[saving.node_i].demand;
                     iterator->nodes.push_back(saving.node_i);
                     added_nodes_index.insert(saving.node_i);
                     break;
                 }
+            }
+        }
+    }
+
+    if (added_nodes_index.size() != n) {
+        auto end = added_nodes_index.end();
+
+        for (auto i = 1; i < n; ++i) {
+            if (added_nodes_index.find(nodes[i].indice) == end) {
+                routes.push_front(Route{nodes[i].demand, {nodes[i].indice}});
             }
         }
     }

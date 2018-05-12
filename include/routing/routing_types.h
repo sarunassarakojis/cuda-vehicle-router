@@ -34,7 +34,7 @@ namespace routing {
      * \brief 
      */
     struct Route {
-        unsigned route_cost;
+        unsigned met_demand;
         std::list<long> nodes;
     };
 }

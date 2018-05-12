@@ -29,7 +29,7 @@ int main(int argc, char* argv[]) {
     nodes.push_back(n5);
 
     auto t1 = chrono::high_resolution_clock::now();
-    auto routes = route(nodes, 100);
+    auto routes = route(nodes, 50);
     auto t2 = chrono::high_resolution_clock::now();
 
     cout << chrono::duration_cast<chrono::milliseconds>(t2 - t1).count() << " mili sec\n";
@@ -40,7 +40,7 @@ int main(int argc, char* argv[]) {
         for (auto& node : iterator.nodes) {
             cout << node << " ";
         }
-        cout << "| Total cost: " << iterator.route_cost << '\n';
+        cout << "| Total cost: " << iterator.met_demand << '\n';
     }
 
     // std::vector<std::unique_ptr<Device_properties>> properties = device_query::get_cuda_device_properties();
