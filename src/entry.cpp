@@ -29,7 +29,7 @@ int main(int argc, char* argv[]) {
     nodes.push_back(n5);
 
     auto t1 = chrono::high_resolution_clock::now();
-    auto routes = route(nodes, 50);
+    auto routes = route(nodes, 100);
     auto t2 = chrono::high_resolution_clock::now();
 
     cout << chrono::duration_cast<chrono::milliseconds>(t2 - t1).count() << " mili sec\n";

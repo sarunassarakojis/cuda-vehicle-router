@@ -6,32 +6,17 @@
 #include <unordered_set>
 
 using namespace std;
+using namespace routing;
 
 inline double power_by_2(const double& x) {
     return pow(x, 2);
 }
 
-template <typename T>
-void print_out(T** matrix, const int& size) {
-    for (int i = 0; i < size; i++) {
-        for (int j = 0; j < size; j++) {
-            std::cout << matrix[i][j] << " ";
-        }
-        std::cout << "\n";
-    }
-}
-
-std::forward_list<routing::Route> routing::route(std::vector<Node> nodes, unsigned vehicle_capacity) {
+inline double** get_distances_matrix(vector<Node>& nodes) {
     const int n = nodes.size();
     double** distance_matrix = new double*[n];
-    vector<Saving> savings;
-    forward_list<Route> routes;
-    unordered_set<long> added_nodes_index;
 
-    added_nodes_index.reserve(n);
-
-    // distance matrix calculation
-    for (int i = 0; i < n; i++) {
+    for (int i = 0; i < n; ++i) {
         distance_matrix[i] = new double[n];
 
         for (int j = 0; j < n; j++) {
@@ -41,29 +26,34 @@ std::forward_list<routing::Route> routing::route(std::vector<Node> nodes, unsign
         }
     }
 
-    cout << "Distance matrix:" << '\n';
-    print_out(distance_matrix, n);
+    return distance_matrix;
+}
 
-    // savings calculation
-    savings.reserve(power_by_2(n));
-    for (int i = 1; i != n; ++i) {
-        for (int j = i + 1; j != n; ++j) {
-            double saving = distance_matrix[0][i] + distance_matrix[0][j] - distance_matrix[i][j];
-
-            savings.push_back(Saving{i, j, saving});
+inline void calculate_savings(vector<Saving>& savings, double** distance_matrix, const int& size) {
+    for (int i = 1; i < size; ++i) {
+        for (int j = i + 1; j < size; ++j) {
+            savings.push_back(Saving{
+                i, j, distance_matrix[0][i] + distance_matrix[0][j] - distance_matrix[i][j]
+            });
         }
     }
+}
 
-    // sort saving in descending order
+std::forward_list<Route> routing::route(vector<Node> nodes, unsigned vehicle_capacity) {
+    const int n = nodes.size();
+    double** distance_matrix = get_distances_matrix(nodes);
+    vector<Saving> savings;
+    forward_list<Route> routes;
+    unordered_set<long> added_nodes_index;
+
+    added_nodes_index.reserve(n);
+    savings.reserve(power_by_2(n));
+
+    calculate_savings(savings, distance_matrix, n);
     sort(savings.begin(), savings.end(), [&](auto& s1, auto& s2) -> bool { return s1.saving > s2.saving; });
 
-    cout << "\nSavings sorted:" << '\n';
-    for (auto& s : savings) {
-        printf("s(%d, %d) = %f\n", s.node_i, s.node_j, s.saving);
-    }
-
     // main algo
-    for (auto i = 0; added_nodes_index.size() != n && i != savings.size(); i++) {
+    for (size_t i = 0, savings_n = savings.size(); added_nodes_index.size() != n && i != savings_n; i++) {
         const auto saving = savings[i];
         const auto found_i = added_nodes_index.find(saving.node_i) != added_nodes_index.end();
         const auto found_j = added_nodes_index.find(saving.node_j) != added_nodes_index.end();
