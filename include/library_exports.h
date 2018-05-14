@@ -1,18 +1,18 @@
 
-#ifndef LIBRARY_EXPORT_H
-#define LIBRARY_EXPORT_H
+#ifndef LIBRARY_API_H
+#define LIBRARY_API_H
 
 #ifdef CUDA_VEHICLE_ROUTER_LIB_STATIC_DEFINE
-#  define LIBRARY_EXPORT
+#  define LIBRARY_API
 #  define CUDA_VEHICLE_ROUTER_LIB_NO_EXPORT
 #else
-#  ifndef LIBRARY_EXPORT
+#  ifndef LIBRARY_API
 #    ifdef cuda_vehicle_router_lib_EXPORTS
         /* We are building this library */
-#      define LIBRARY_EXPORT __declspec(dllexport)
+#      define LIBRARY_API __declspec(dllexport)
 #    else
         /* We are using this library */
-#      define LIBRARY_EXPORT __declspec(dllimport)
+#      define LIBRARY_API __declspec(dllimport)
 #    endif
 #  endif
 
@@ -26,7 +26,7 @@
 #endif
 
 #ifndef CUDA_VEHICLE_ROUTER_LIB_DEPRECATED_EXPORT
-#  define CUDA_VEHICLE_ROUTER_LIB_DEPRECATED_EXPORT LIBRARY_EXPORT CUDA_VEHICLE_ROUTER_LIB_DEPRECATED
+#  define CUDA_VEHICLE_ROUTER_LIB_DEPRECATED_EXPORT LIBRARY_API CUDA_VEHICLE_ROUTER_LIB_DEPRECATED
 #endif
 
 #ifndef CUDA_VEHICLE_ROUTER_LIB_DEPRECATED_NO_EXPORT

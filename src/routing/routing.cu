@@ -1,6 +1,8 @@
 #include "routing/routing.h"
+#include "utilities/logging.h"
 
-#include <iostream>
+#include <cuda_runtime.h>
+#include <device_launch_parameters.h>
 #include <algorithm>
 #include <forward_list>
 #include <unordered_set>
@@ -8,19 +10,19 @@
 using namespace std;
 using namespace routing;
 
-inline double power_by_2(const double& x) {
+inline float power_by_2(const double& x) {
     return pow(x, 2);
 }
 
-inline double** get_distances_matrix(vector<Node>& nodes) {
+inline float** get_distances_matrix(vector<Node>& nodes) {
     const int n = nodes.size();
-    double** distance_matrix = new double*[n];
+    float** distance_matrix = new float*[n];
 
     for (int i = 0; i < n; ++i) {
-        distance_matrix[i] = new double[n];
+        distance_matrix[i] = new float[n];
 
         for (int j = 0; j < n; j++) {
-            double d = sqrt(power_by_2(nodes[i].x - nodes[j].x) + power_by_2(nodes[i].y - nodes[j].y));
+            auto d = sqrt(power_by_2(nodes[i].x - nodes[j].x) + power_by_2(nodes[i].y - nodes[j].y));
 
             distance_matrix[i][j] = d;
         }
@@ -29,7 +31,7 @@ inline double** get_distances_matrix(vector<Node>& nodes) {
     return distance_matrix;
 }
 
-inline void calculate_savings(vector<Saving>& savings, double** distance_matrix, const int& size) {
+inline void calculate_savings(vector<Saving>& savings, float** distance_matrix, const int& size) {
     for (int i = 1; i < size; ++i) {
         for (int j = i + 1; j < size; ++j) {
             savings.push_back(Saving{
@@ -59,31 +61,31 @@ inline void append_new_node_to_route(forward_list<Route>& routes, long& found_no
 }
 
 inline void add_unoptimized_routes(unordered_set<long>& added_nodes, forward_list<Route>& routes,
-    vector<Node>& nodes, const int& size, const unsigned& capacity) {
+                                   vector<Node>& nodes, const int& size, const unsigned& capacity) {
     auto end = added_nodes.end();
 
     for (auto i = 1; i < size; ++i) {
         if (added_nodes.find(nodes[i].indice) == end
             && nodes[i].demand <= capacity) {
-            routes.push_front(Route{ nodes[i].demand,{ nodes[i].indice } });
+            routes.push_front(Route{nodes[i].demand, {nodes[i].indice}});
         }
     }
 }
 
 std::forward_list<Route> routing::route(vector<Node> nodes, unsigned vehicle_capacity) {
-    const int n = nodes.size();
-    double** distance_matrix = get_distances_matrix(nodes);
+    const int size = nodes.size();
+    float** distance_matrix = get_distances_matrix(nodes);
     vector<Saving> savings;
     forward_list<Route> routes;
     unordered_set<long> added_nodes;
 
-    added_nodes.reserve(n);
-    savings.reserve(power_by_2(n));
+    added_nodes.reserve(size);
+    savings.reserve(power_by_2(size));
 
-    calculate_savings(savings, distance_matrix, n);
+    calculate_savings(savings, distance_matrix, size);
     sort(savings.begin(), savings.end(), [&](auto& s1, auto& s2) -> bool { return s1.saving > s2.saving; });
 
-    for (size_t i = 0, savings_n = savings.size(); added_nodes.size() != n && i != savings_n; i++) {
+    for (size_t i = 0, savings_n = savings.size(); added_nodes.size() != size && i != savings_n; i++) {
         const auto saving = savings[i];
         auto node_i = saving.node_i;
         auto node_j = saving.node_j;
@@ -105,11 +107,11 @@ std::forward_list<Route> routing::route(vector<Node> nodes, unsigned vehicle_cap
         }
     }
 
-    if (added_nodes.size() != n) {
-        add_unoptimized_routes(added_nodes, routes, nodes, n, vehicle_capacity);
+    if (added_nodes.size() != size) {
+        add_unoptimized_routes(added_nodes, routes, nodes, size, vehicle_capacity);
     }
 
-    for (auto i = 0; i < n; i++) {
+    for (auto i = 0; i < size; i++) {
         delete[] distance_matrix[i];
     }
     delete[] distance_matrix;
@@ -117,6 +119,43 @@ std::forward_list<Route> routing::route(vector<Node> nodes, unsigned vehicle_cap
     return routes;
 }
 
-forward_list<Route> routing::route_parallel(vector<Node> nodes, unsigned vehicle_capacity) {
+__global__
+void calculate_vectors(long* digits_a) {
+    auto x = blockDim.x * blockIdx.x + threadIdx.x;
+
+    printf("Digit: %d from thread: %d\n", digits_a[x], x);
+}
+
+forward_list<Route> routing::route_parallel(vector<Node> nodes, unsigned vehicle_capacity, Thread_config configuration) {
+    size_t n = nodes.size();
+    size_t size = n * sizeof(long);
+    long* digits_h = new long[n];
+    long* digits_d = new long[n];
+
+    for (int i = 0; i < n; ++i) {
+        digits_h[i] = nodes[i].indice;
+    }
+
+    cudaError_t error = cudaMalloc(&digits_d, size);
+
+    if (error != cudaSuccess) {
+        logging::get_logger()->error("Err: {}", cudaGetErrorString(error));
+    }
+
+    error = cudaMemcpy(digits_d, digits_h, size, cudaMemcpyHostToDevice);
+
+    if (error != cudaSuccess) {
+        logging::get_logger()->error("Err: {}", cudaGetErrorString(error));
+    }
+
+    dim3 threads_per_block(configuration.threads_per_block_x, configuration.threads_per_block_y);
+    dim3 block_dim(max(static_cast<int>(n / threads_per_block.x), 1),
+                   max(static_cast<int>(n / threads_per_block.y), 1));
+
+    calculate_vectors<<<block_dim, threads_per_block>>>(digits_d);
+
+    cudaFree(digits_d);
+    delete[] digits_h;
+
     return forward_list<Route>{};
 }
