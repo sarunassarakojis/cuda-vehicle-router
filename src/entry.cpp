@@ -30,6 +30,7 @@ int main(int argc, char* argv[]) {
 
     auto t1 = chrono::high_resolution_clock::now();
     auto routes = route(nodes, 100);
+    auto routes_ = route_parallel(nodes, 100, Thread_config{5, 5});
     auto t2 = chrono::high_resolution_clock::now();
 
     cout << chrono::duration_cast<chrono::milliseconds>(t2 - t1).count() << " mili sec\n";
@@ -43,10 +44,11 @@ int main(int argc, char* argv[]) {
         cout << "| Total cost: " << iterator.met_demand << '\n';
     }
 
-    // std::vector<std::unique_ptr<Device_properties>> properties = device_query::get_cuda_device_properties();
-    // auto p = std::move(properties[0]);
+    std::vector<std::unique_ptr<Device_properties>> properties = device_query::get_cuda_device_properties();
+    auto p = std::move(properties[0]);
 
-    // std::cout << p->device_name << '\n';
-    // std::cout << p->global_memory_in_mb << '\n';
-    // std::cout << p->compute_capability << '\n';
+    std::cout << p->device_name << '\n';
+    std::cout << p->global_memory_in_mb << '\n';
+    std::cout << p->maximum_threads_per_block << '\n';
+    std::cout << p->compute_capability << '\n';
 }

@@ -14,7 +14,7 @@ namespace device_query {
      * 
      * \return a vector of CUDA capable device properties.
      */
-    LIBRARY_EXPORT std::vector<std::unique_ptr<Device_properties>> get_cuda_device_properties();
+    LIBRARY_API std::vector<std::unique_ptr<Device_properties>> get_cuda_device_properties();
 
     /**
     * \brief Returns a single properties unit for CUDA capable 
@@ -27,5 +27,5 @@ namespace device_query {
     * \return pointer to a device properties or nullptr if such 
     * device at given index does not exist.
     */
-    LIBRARY_EXPORT std::unique_ptr<Device_properties> get_cuda_device_properties(const int* device_indice);
+    LIBRARY_API std::unique_ptr<Device_properties> get_cuda_device_properties(const int* device_indice);
 }

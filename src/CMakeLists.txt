@@ -19,7 +19,7 @@ function (add_install_rules_for_shared_library target_name)
     include (GenerateExportHeader)
     SET (EXPORTS_FILE library_exports.h)
 
-    generate_export_header (${target_name} EXPORT_MACRO_NAME LIBRARY_EXPORT 
+    generate_export_header (${target_name} EXPORT_MACRO_NAME LIBRARY_API 
             EXPORT_FILE_NAME ${HEADERS_DIR}/${EXPORTS_FILE})
     install (TARGETS ${target_name} CONFIGURATIONS Debug
             ARCHIVE DESTINATION debug/lib
