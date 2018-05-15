@@ -1,7 +1,7 @@
 #include "routing/routing.h"
 #include "utilities/logging.h"
 
-#include <thrust/device_vector.h>
+#include <thrust/device_ptr.h>
 #include <thrust/sort.h>
 #include <cuda_runtime.h>
 #include <device_launch_parameters.h>
