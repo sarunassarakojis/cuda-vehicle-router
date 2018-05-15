@@ -19,6 +19,14 @@ int main(int argc, char* argv[]) {
     const Node n3{3, 3, 3, 50};
     const Node n4{4, -1, 1, 25};
     const Node n5{5, -1, -2, 25};
+    Node* arr = new Node[6];
+
+    arr[0] = n0;
+    arr[1] = n1;
+    arr[2] = n2;
+    arr[3] = n3;
+    arr[4] = n4;
+    arr[5] = n5;
 
     nodes.reserve(6);
     nodes.push_back(n0);
@@ -30,7 +38,7 @@ int main(int argc, char* argv[]) {
 
     auto t1 = chrono::high_resolution_clock::now();
     auto routes = route(nodes, 100);
-    auto routes_ = route_parallel(nodes, 100, Thread_config{5, 5});
+    auto routes_ = route_parallel(arr, 6, 100);
     auto t2 = chrono::high_resolution_clock::now();
 
     cout << chrono::duration_cast<chrono::milliseconds>(t2 - t1).count() << " mili sec\n";
@@ -51,4 +59,6 @@ int main(int argc, char* argv[]) {
     std::cout << p->global_memory_in_mb << '\n';
     std::cout << p->maximum_threads_per_block << '\n';
     std::cout << p->compute_capability << '\n';
+
+    delete[] arr;
 }

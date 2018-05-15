@@ -23,6 +23,6 @@ namespace routing {
     * \param vehicle_capacity ca
     * \param configuration
     */
-    LIBRARY_API std::forward_list<Route> route_parallel(std::vector<Node> nodes, unsigned vehicle_capacity, 
-        Thread_config configuration = {16, 16});
+    LIBRARY_API std::forward_list<Route> route_parallel(Node* nodes, int size, unsigned vehicle_capacity,
+                                                        Thread_config configuration = {16, 16});
 }

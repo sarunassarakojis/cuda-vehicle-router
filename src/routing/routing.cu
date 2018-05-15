@@ -1,6 +1,9 @@
 #include "routing/routing.h"
 #include "utilities/logging.h"
 
+#include <thrust/host_vector.h>
+#include <thrust/device_vector.h>
+#include <thrust/sort.h>
 #include <cuda_runtime.h>
 #include <device_launch_parameters.h>
 #include <algorithm>
@@ -9,9 +12,17 @@
 
 using namespace std;
 using namespace routing;
+using namespace logging;
 
-inline float power_by_2(const double& x) {
-    return pow(x, 2);
+struct Savings_ordering_desc {
+
+    __host__ __device__ bool operator()(Saving& s1, Saving& s2) const {
+        return s1.saving > s2.saving;
+    }
+};
+
+inline float power_by_2(const float& x) {
+    return powf(x, 2);
 }
 
 inline float** get_distances_matrix(vector<Node>& nodes) {
@@ -22,7 +33,7 @@ inline float** get_distances_matrix(vector<Node>& nodes) {
         distance_matrix[i] = new float[n];
 
         for (int j = 0; j < n; j++) {
-            auto d = sqrt(power_by_2(nodes[i].x - nodes[j].x) + power_by_2(nodes[i].y - nodes[j].y));
+            auto d = sqrtf(power_by_2(nodes[i].x - nodes[j].x) + power_by_2(nodes[i].y - nodes[j].y));
 
             distance_matrix[i][j] = d;
         }
@@ -119,43 +130,93 @@ std::forward_list<Route> routing::route(vector<Node> nodes, unsigned vehicle_cap
     return routes;
 }
 
-__global__
-void calculate_vectors(long* digits_a) {
-    auto x = blockDim.x * blockIdx.x + threadIdx.x;
-
-    printf("Digit: %d from thread: %d\n", digits_a[x], x);
+inline void log_cuda_error(cudaError_t error, char* message = "CUDA error: {}") {
+    get_logger()->error(message, cudaGetErrorString(error));
 }
 
-forward_list<Route> routing::route_parallel(vector<Node> nodes, unsigned vehicle_capacity, Thread_config configuration) {
-    size_t n = nodes.size();
-    size_t size = n * sizeof(long);
-    long* digits_h = new long[n];
-    long* digits_d = new long[n];
+__global__ void calculate_distance_matrix(Node* nodes, float* distance_matrix, int size) {
+    int x = blockDim.x * blockIdx.x + threadIdx.x;
+    int y = blockDim.y * blockIdx.y + threadIdx.y;
 
-    for (int i = 0; i < n; ++i) {
-        digits_h[i] = nodes[i].indice;
+    if (x < size && y < size) {
+        distance_matrix[size * y + x] = sqrtf(
+            powf(nodes[x].x - nodes[y].x, 2) + powf(nodes[x].y - nodes[y].y, 2));
     }
+}
 
-    cudaError_t error = cudaMalloc(&digits_d, size);
+__global__ void calculate_savings(float* distance_matrix, Saving* savings, int size) {
+    int y = blockDim.x * blockIdx.x + threadIdx.x;
+    int x = blockDim.y * blockIdx.y + threadIdx.y;
+
+    if (y > 0 && x > 0 && x < size && y < size) {
+        int array_index = (size - 1) * (y - 1) + (x - 1);
+        Saving& saving = savings[array_index];
+
+        saving.node_i = x;
+        saving.node_j = y;
+        saving.saving = x != y ? distance_matrix[y] + distance_matrix[x] - distance_matrix[size * x + y] : 0;
+    }
+}
+
+forward_list<Route> routing::route_parallel(Node* nodes, int size, unsigned vehicle_capacity,
+                                            Thread_config configuration) {
+    const auto nodes_size = size * sizeof(Node);
+    const auto savings_size = (size - 1) * (size - 1);
+    float* distance_matrix_d;
+    Node* nodes_d;
+    Saving* savings_h = new Saving[savings_size];
+    Saving* savings_d;
+    forward_list<Route> routes;
+    unordered_set<long> added_nodes;
+
+    cudaError_t error = cudaMalloc((void**)&distance_matrix_d, size * size * sizeof(float));
 
     if (error != cudaSuccess) {
-        logging::get_logger()->error("Err: {}", cudaGetErrorString(error));
+        log_cuda_error(error);
+        return routes;
     }
 
-    error = cudaMemcpy(digits_d, digits_h, size, cudaMemcpyHostToDevice);
+    error = cudaMalloc((void**)&nodes_d, nodes_size);
 
     if (error != cudaSuccess) {
-        logging::get_logger()->error("Err: {}", cudaGetErrorString(error));
+        log_cuda_error(error);
+        return routes;
+    }
+
+    error = cudaMalloc((void**)&savings_d, savings_size * sizeof(Saving));
+
+    if (error != cudaSuccess) {
+        log_cuda_error(error);
+        return routes;
+    }
+
+    error = cudaMemcpy(nodes_d, nodes, nodes_size, cudaMemcpyHostToDevice);
+
+    if (error != cudaSuccess) {
+        log_cuda_error(error);
+        return routes;
     }
 
     dim3 threads_per_block(configuration.threads_per_block_x, configuration.threads_per_block_y);
-    dim3 block_dim(max(static_cast<int>(n / threads_per_block.x), 1),
-                   max(static_cast<int>(n / threads_per_block.y), 1));
+    dim3 block_dim(size / threads_per_block.x + 1, size / threads_per_block.y + 1);
 
-    calculate_vectors<<<block_dim, threads_per_block>>>(digits_d);
+    calculate_distance_matrix<<<block_dim, threads_per_block>>>(nodes_d, distance_matrix_d, size);
+    calculate_savings<<<block_dim, threads_per_block>>>(distance_matrix_d, savings_d, size);
 
-    cudaFree(digits_d);
-    delete[] digits_h;
+    thrust::sort(thrust::device_ptr<Saving>(savings_d),
+                 thrust::device_ptr<Saving>(savings_d + savings_size), Savings_ordering_desc());
 
-    return forward_list<Route>{};
+    cudaMemcpy(savings_h, savings_d, savings_size * sizeof(Saving), cudaMemcpyDeviceToHost);
+
+    printf("\n");
+    for (int i = 0; i < savings_size; ++i) {
+        printf("Saving: (%d, %d) = %.1f\n", savings_h[i].node_i, savings_h[i].node_j, savings_h[i].saving);
+    }
+
+    delete[] savings_h;
+    cudaFree(nodes_d);
+    cudaFree(distance_matrix_d);
+    cudaFree(savings_d);
+
+    return routes;
 }
