@@ -71,7 +71,7 @@ inline void append_new_node_to_route(forward_list<Route>& routes, long& found_no
 }
 
 inline void add_unoptimized_routes(unordered_set<long>& added_nodes, forward_list<Route>& routes,
-                                   vector<Node>& nodes, const int& size, const unsigned& capacity) {
+                                   Node* nodes, int& size, unsigned& capacity) {
     auto end = added_nodes.end();
 
     for (auto i = 1; i < size; ++i) {
@@ -83,7 +83,7 @@ inline void add_unoptimized_routes(unordered_set<long>& added_nodes, forward_lis
 }
 
 std::forward_list<Route> routing::route(vector<Node> nodes, unsigned vehicle_capacity) {
-    const int size = nodes.size();
+    int size = nodes.size();
     float** distance_matrix = get_distances_matrix(nodes);
     vector<Saving> savings;
     forward_list<Route> routes;
@@ -118,7 +118,7 @@ std::forward_list<Route> routing::route(vector<Node> nodes, unsigned vehicle_cap
     }
 
     if (added_nodes.size() != size) {
-        add_unoptimized_routes(added_nodes, routes, nodes, size, vehicle_capacity);
+        add_unoptimized_routes(added_nodes, routes, &nodes[0], size, vehicle_capacity);
     }
 
     for (auto i = 0; i < size; i++) {
@@ -157,10 +157,14 @@ __global__ void calculate_savings(float* distance_matrix, Saving* savings, int s
     }
 }
 
+inline void sort_savings_desc(Saving* savings, int& savings_size) {
+    thrust::sort(thrust::device_ptr<Saving>(savings),
+                 thrust::device_ptr<Saving>(savings + savings_size), Savings_ordering_desc());
+}
+
 forward_list<Route> routing::route_parallel(Node* nodes, int size, unsigned vehicle_capacity,
                                             Thread_config configuration) {
-    const auto nodes_size = size * sizeof(Node);
-    const auto savings_size = (size - 1) * (size - 1);
+    auto savings_size = (size - 1) * (size - 1);
     float* distance_matrix_d;
     Node* nodes_d;
     Saving* savings_h = new Saving[savings_size];
@@ -175,7 +179,7 @@ forward_list<Route> routing::route_parallel(Node* nodes, int size, unsigned vehi
         return routes;
     }
 
-    error = cudaMalloc((void**)&nodes_d, nodes_size);
+    error = cudaMalloc((void**)&nodes_d, size * sizeof(Node));
 
     if (error != cudaSuccess) {
         log_cuda_error(error);
@@ -189,7 +193,7 @@ forward_list<Route> routing::route_parallel(Node* nodes, int size, unsigned vehi
         return routes;
     }
 
-    error = cudaMemcpy(nodes_d, nodes, nodes_size, cudaMemcpyHostToDevice);
+    error = cudaMemcpy(nodes_d, nodes, size * sizeof(Node), cudaMemcpyHostToDevice);
 
     if (error != cudaSuccess) {
         log_cuda_error(error);
@@ -201,15 +205,39 @@ forward_list<Route> routing::route_parallel(Node* nodes, int size, unsigned vehi
 
     calculate_distance_matrix<<<block_dim, threads_per_block>>>(nodes_d, distance_matrix_d, size);
     calculate_savings<<<block_dim, threads_per_block>>>(distance_matrix_d, savings_d, size);
+    sort_savings_desc(savings_d, savings_size);
 
-    thrust::sort(thrust::device_ptr<Saving>(savings_d),
-                 thrust::device_ptr<Saving>(savings_d + savings_size), Savings_ordering_desc());
+    error = cudaMemcpy(savings_h, savings_d, savings_size * sizeof(Saving), cudaMemcpyDeviceToHost);
 
-    cudaMemcpy(savings_h, savings_d, savings_size * sizeof(Saving), cudaMemcpyDeviceToHost);
+    if (error != cudaSuccess) {
+        log_cuda_error(error);
+        return routes;
+    }
 
-    printf("\n");
-    for (int i = 0; i < savings_size; ++i) {
-        printf("Saving: (%d, %d) = %.1f\n", savings_h[i].node_i, savings_h[i].node_j, savings_h[i].saving);
+    for (auto i = 0; i < savings_size && added_nodes.size() != size; ++i) {
+        const auto saving = savings_h[i];
+        auto node_i = saving.node_i;
+        auto node_j = saving.node_j;
+        auto node_i_demand = nodes[node_i].demand;
+        auto node_j_demand = nodes[node_j].demand;
+        const auto found_i = added_nodes.find(node_i) != added_nodes.end();
+        const auto found_j = added_nodes.find(node_j) != added_nodes.end();
+
+        if (!found_i && !found_j && node_i_demand + node_j_demand <= vehicle_capacity) {
+            added_nodes.insert(node_i);
+            added_nodes.insert(node_j);
+            routes.push_front(Route{node_i_demand + node_j_demand, {node_i, node_j}});
+        }
+        else if (found_i && !found_j) {
+            append_new_node_to_route(routes, node_i, node_j, vehicle_capacity, node_j_demand, added_nodes);
+        }
+        else if (found_j && !found_i) {
+            append_new_node_to_route(routes, node_j, node_i, vehicle_capacity, node_i_demand, added_nodes);
+        }
+    }
+
+    if (added_nodes.size() != size) {
+        add_unoptimized_routes(added_nodes, routes, nodes, size, vehicle_capacity);
     }
 
     delete[] savings_h;
