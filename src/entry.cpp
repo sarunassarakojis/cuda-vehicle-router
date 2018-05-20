@@ -35,6 +35,11 @@ std::vector<Node> get_dataset_2() {
     nodes.push_back(Node{5, -1, -2, 25});
     nodes.push_back(Node{6, -5, -10, 100});
     nodes.push_back(Node{7, 0, 0, 25});
+    nodes.push_back(Node{8, 10, 10, 25});
+    nodes.push_back(Node{9, 15, 15, 25});
+    nodes.push_back(Node{10, 20, 20, 25});
+    nodes.push_back(Node{11, -10, -10, 25});
+    nodes.push_back(Node{12, -15, -15, 25});
 
     return nodes;
 }
@@ -45,7 +50,8 @@ int main(int argc, char* argv[]) {
 
     auto t1 = chrono::high_resolution_clock::now();
     auto set = get_dataset_2();
-    auto routes = route_parallel(&set[0], set.size(), 100);
+    // auto routes = route_parallel(&set[0], set.size(), 500);
+    auto routes = route(set, 200);
     auto t2 = chrono::high_resolution_clock::now();
 
     cout << chrono::duration_cast<chrono::milliseconds>(t2 - t1).count() << " mili sec\n";
