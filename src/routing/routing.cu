@@ -223,7 +223,7 @@ forward_list<Route> routing::route_parallel(Node* nodes, int size, unsigned vehi
         const auto found_i = added_nodes.find(node_i) != added_nodes.end();
         const auto found_j = added_nodes.find(node_j) != added_nodes.end();
 
-        if (!found_i && !found_j && node_i_demand + node_j_demand <= vehicle_capacity) {
+        if (node_i != node_j && !found_i && !found_j && node_i_demand + node_j_demand <= vehicle_capacity) {
             added_nodes.insert(node_i);
             added_nodes.insert(node_j);
             routes.push_front(Route{node_i_demand + node_j_demand, {node_i, node_j}});
