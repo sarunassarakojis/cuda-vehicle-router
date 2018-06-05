@@ -30,7 +30,7 @@ function (add_install_rules_for_shared_library target_name)
     install (DIRECTORY ${HEADERS_DIR}/ DESTINATION include)
 endfunction ()
 
-set (HEADERS_DIR ${PROJECT_SOURCE_DIR}/include)
+set (HEADERS_DIR ${PROJECT_SOURCE_DIR}/src/include)
 set (PUBLIC_API 
         ${HEADERS_DIR}/routing/routing.h
         ${HEADERS_DIR}/routing/routing_types.h
@@ -42,7 +42,7 @@ set (SOURCES
         utilities/device/device_query.cpp
         utilities/logging.cpp)
 
-source_group (TREE ${PROJECT_SOURCE_DIR}/include PREFIX "Header Files" FILES ${PUBLIC_API})
+source_group (TREE ${PROJECT_SOURCE_DIR}/src/include PREFIX "Header Files" FILES ${PUBLIC_API})
 source_group (TREE ${PROJECT_SOURCE_DIR}/src PREFIX "Source Files" FILES ${SOURCES})
 
 set (LIBRARY_NAME "${PROJECT_NAME}-lib")

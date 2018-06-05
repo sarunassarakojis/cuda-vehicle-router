@@ -95,7 +95,7 @@ std::forward_list<Route> routing::route(vector<Node> nodes, unsigned vehicle_cap
     calculate_savings(savings, distance_matrix, size);
     sort(savings.begin(), savings.end(), [&](auto& s1, auto& s2) -> bool { return s1.saving > s2.saving; });
 
-    for (size_t i = 0, savings_n = savings.size(); added_nodes.size() != size && i != savings_n; i++) {
+    for (size_t i = 0, savings_n = savings.size(); added_nodes.size() != size - 1 && i != savings_n; i++) {
         const auto saving = savings[i];
         auto node_i = saving.node_i;
         auto node_j = saving.node_j;
@@ -214,7 +214,7 @@ forward_list<Route> routing::route_parallel(Node* nodes, int size, unsigned vehi
         goto cleanup;
     }
 
-    for (auto i = 0; i < savings_size && added_nodes.size() != size; ++i) {
+    for (auto i = 0; i < savings_size && added_nodes.size() != size - 1; ++i) {
         const auto saving = savings_h[i];
         auto node_i = saving.node_i;
         auto node_j = saving.node_j;
