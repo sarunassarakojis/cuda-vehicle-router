@@ -117,7 +117,7 @@ std::forward_list<Route> routing::route(vector<Node> nodes, unsigned vehicle_cap
         }
     }
 
-    if (added_nodes.size() != size) {
+    if (added_nodes.size() != size - 1) {
         add_unoptimized_routes(added_nodes, routes, &nodes[0], size, vehicle_capacity);
     }
 
@@ -176,28 +176,28 @@ forward_list<Route> routing::route_parallel(Node* nodes, int size, unsigned vehi
 
     if (error != cudaSuccess) {
         log_cuda_error(error);
-        return routes;
+        goto cleanup;
     }
 
     error = cudaMalloc((void**)&nodes_d, size * sizeof(Node));
 
     if (error != cudaSuccess) {
         log_cuda_error(error);
-        return routes;
+        goto cleanup;
     }
 
     error = cudaMalloc((void**)&savings_d, savings_size * sizeof(Saving));
 
     if (error != cudaSuccess) {
         log_cuda_error(error);
-        return routes;
+        goto cleanup;
     }
 
     error = cudaMemcpy(nodes_d, nodes, size * sizeof(Node), cudaMemcpyHostToDevice);
 
     if (error != cudaSuccess) {
         log_cuda_error(error);
-        return routes;
+        goto cleanup;
     }
 
     dim3 threads_per_block(configuration.threads_per_block_x, configuration.threads_per_block_y);
@@ -211,7 +211,7 @@ forward_list<Route> routing::route_parallel(Node* nodes, int size, unsigned vehi
 
     if (error != cudaSuccess) {
         log_cuda_error(error);
-        return routes;
+        goto cleanup;
     }
 
     for (auto i = 0; i < savings_size && added_nodes.size() != size; ++i) {
@@ -236,10 +236,11 @@ forward_list<Route> routing::route_parallel(Node* nodes, int size, unsigned vehi
         }
     }
 
-    if (added_nodes.size() != size) {
+    if (added_nodes.size() != size - 1) {
         add_unoptimized_routes(added_nodes, routes, nodes, size, vehicle_capacity);
     }
 
+cleanup:
     delete[] savings_h;
     cudaFree(nodes_d);
     cudaFree(distance_matrix_d);
