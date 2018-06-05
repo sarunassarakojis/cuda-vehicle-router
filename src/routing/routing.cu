@@ -97,23 +97,25 @@ std::forward_list<Route> routing::route(vector<Node> nodes, unsigned vehicle_cap
 
     for (size_t i = 0, savings_n = savings.size(); added_nodes.size() != size - 1 && i != savings_n; i++) {
         const auto saving = savings[i];
-        auto node_i = saving.node_i;
-        auto node_j = saving.node_j;
-        auto node_i_demand = nodes[node_i].demand;
-        auto node_j_demand = nodes[node_j].demand;
-        const auto found_i = added_nodes.find(node_i) != added_nodes.end();
-        const auto found_j = added_nodes.find(node_j) != added_nodes.end();
+        auto node_i = nodes[saving.node_i];
+        auto node_j = nodes[saving.node_j];
+        auto id_i = node_i.indice;
+        auto id_j = node_j.indice;
+        auto node_i_demand = node_i.demand;
+        auto node_j_demand = node_j.demand;
+        const auto found_i = added_nodes.find(id_i) != added_nodes.end();
+        const auto found_j = added_nodes.find(id_j) != added_nodes.end();
 
         if (!found_i && !found_j && node_i_demand + node_j_demand <= vehicle_capacity) {
-            added_nodes.insert(node_i);
-            added_nodes.insert(node_j);
-            routes.push_front(Route{node_i_demand + node_j_demand, {node_i, node_j}});
+            added_nodes.insert(id_i);
+            added_nodes.insert(id_j);
+            routes.push_front(Route{node_i_demand + node_j_demand, {id_i, id_j}});
         }
         else if (found_i && !found_j) {
-            append_new_node_to_route(routes, node_i, node_j, vehicle_capacity, node_j_demand, added_nodes);
+            append_new_node_to_route(routes, id_i, id_j, vehicle_capacity, node_j_demand, added_nodes);
         }
         else if (found_j && !found_i) {
-            append_new_node_to_route(routes, node_j, node_i, vehicle_capacity, node_i_demand, added_nodes);
+            append_new_node_to_route(routes, id_j, id_i, vehicle_capacity, node_i_demand, added_nodes);
         }
     }
 
@@ -143,9 +145,9 @@ __global__ void calculate_distance_matrix(Node* nodes, float* distance_matrix, i
     }
 }
 
-__global__ void calculate_savings(float* distance_matrix, Saving* savings, int size) {
-    int y = blockDim.x * blockIdx.x + threadIdx.x;
-    int x = blockDim.y * blockIdx.y + threadIdx.y;
+__global__ void calculate_savings(float* distance_matrix, Saving* savings, Node* nodes, int size) {
+    int x = blockDim.x * blockIdx.x + threadIdx.x;
+    int y = blockDim.y * blockIdx.y + threadIdx.y;
 
     if (y > 0 && x > 0 && x < size && y < size) {
         int array_index = (size - 1) * (y - 1) + (x - 1);
@@ -204,7 +206,7 @@ forward_list<Route> routing::route_parallel(Node* nodes, int size, unsigned vehi
     dim3 block_dim(size / threads_per_block.x + 1, size / threads_per_block.y + 1);
 
     calculate_distance_matrix<<<block_dim, threads_per_block>>>(nodes_d, distance_matrix_d, size);
-    calculate_savings<<<block_dim, threads_per_block>>>(distance_matrix_d, savings_d, size);
+    calculate_savings<<<block_dim, threads_per_block>>>(distance_matrix_d, savings_d, nodes_d, size);
     sort_savings_desc(savings_d, savings_size);
 
     error = cudaMemcpy(savings_h, savings_d, savings_size * sizeof(Saving), cudaMemcpyDeviceToHost);
@@ -216,23 +218,25 @@ forward_list<Route> routing::route_parallel(Node* nodes, int size, unsigned vehi
 
     for (auto i = 0; i < savings_size && added_nodes.size() != size - 1; ++i) {
         const auto saving = savings_h[i];
-        auto node_i = saving.node_i;
-        auto node_j = saving.node_j;
-        auto node_i_demand = nodes[node_i].demand;
-        auto node_j_demand = nodes[node_j].demand;
-        const auto found_i = added_nodes.find(node_i) != added_nodes.end();
-        const auto found_j = added_nodes.find(node_j) != added_nodes.end();
+        auto node_i = nodes[saving.node_i];
+        auto node_j = nodes[saving.node_j];
+        auto id_i = node_i.indice;
+        auto id_j = node_j.indice;
+        auto node_i_demand = node_i.demand;
+        auto node_j_demand = node_j.demand;
+        const auto found_i = added_nodes.find(id_i) != added_nodes.end();
+        const auto found_j = added_nodes.find(id_j) != added_nodes.end();
 
-        if (node_i != node_j && !found_i && !found_j && node_i_demand + node_j_demand <= vehicle_capacity) {
-            added_nodes.insert(node_i);
-            added_nodes.insert(node_j);
-            routes.push_front(Route{node_i_demand + node_j_demand, {node_i, node_j}});
+        if (id_i != id_j && !found_i && !found_j && node_i_demand + node_j_demand <= vehicle_capacity) {
+            added_nodes.insert(id_i);
+            added_nodes.insert(id_j);
+            routes.push_front(Route{node_i_demand + node_j_demand, {id_i, id_j}});
         }
         else if (found_i && !found_j) {
-            append_new_node_to_route(routes, node_i, node_j, vehicle_capacity, node_j_demand, added_nodes);
+            append_new_node_to_route(routes, id_i, id_j, vehicle_capacity, node_j_demand, added_nodes);
         }
         else if (found_j && !found_i) {
-            append_new_node_to_route(routes, node_j, node_i, vehicle_capacity, node_i_demand, added_nodes);
+            append_new_node_to_route(routes, id_j, id_i, vehicle_capacity, node_i_demand, added_nodes);
         }
     }
 
